@@ -17,7 +17,10 @@ const userSchema = new mongoose.Schema({
         required:true,
         trim:true
     },
-    password:{
+    contactNO:{
+        type:Number
+    },
+    password:{    
         type:String,
         required:true,
         trim:true
@@ -48,7 +51,16 @@ const userSchema = new mongoose.Schema({
     imageUrl:{
         type:String,
         required:true
+    },
+    
+    // addition in reset password code
+    token:{
+        type:String
+    },
+    resetPasswordExpires:{
+        type:Date
     }
+
 
 });
 
