@@ -34,7 +34,7 @@ exports.createCourse = async(req , res)=>{
               });
         }
 
-        const uploadthumbnail = await uploadImageToCloudinary(thumbnail , process.env.CLOUDINARY_THUMBNAIL_FOLDER);
+        const uploadthumbnail = await uploadImageToCloudinary(thumbnail , process.env.CLOUDINARY_FOLDER);
 
         const newCourse = await courses.create({
             courseName : courseName,

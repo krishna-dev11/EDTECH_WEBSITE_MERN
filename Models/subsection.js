@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const subSectionSchema = new mongoose.Schema({
 
-     tile:{
+     title:{    
         type:String,
         required:true,
         trim:true
