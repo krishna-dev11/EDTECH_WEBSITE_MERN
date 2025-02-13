@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const profileSchema = new mongoose.Schema({
 
-    gender:{
+    gender:{   
         type:String,   
         required:true
     },
