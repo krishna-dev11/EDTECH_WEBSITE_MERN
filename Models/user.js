@@ -31,7 +31,7 @@ const userSchema = new mongoose.Schema({
         enum:["Admin" , "Instructor" , "Student"]
     },
     active:{
-        type:Boolean
+        type:Boolean     
     },
     approved:{
         type:Boolean
@@ -40,7 +40,7 @@ const userSchema = new mongoose.Schema({
         type:mongoose.Schema.Types.ObjectId,
         ref:"courses"
     }],
-    additionalDetails:{
+   additionalDetails :{
         type:mongoose.Schema.Types.ObjectId,
         ref:"profile"
     },

@@ -14,10 +14,10 @@ exports.mailSender = async(email , title , body)=>{
     })
 
     let mailsended = await transporter.sendMail({
-        from:'From Study_notion',
-        to:{email},
-        subject:{title},
-        html:`<h1>Verify your email with these otp ${body}</h1>`
+        from:'STUDY NOTION || by krishna gothwal',
+        to:`${email}`,
+        subject:`${title}`,
+        html:`${body}`
     })
 
     console.log(mailsended);

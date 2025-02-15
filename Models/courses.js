@@ -4,14 +4,13 @@ const coursesSchema = new mongoose.Schema({
 
     courseName:{      
         type:String,
-        required:true
     },
     courseDescription:{
         type:String,
-        required:true
     },
     instructor:{
         type:mongoose.Schema.Types.ObjectId,
+        required:true,
         ref:"user"
     },
     whatYouWillLearn:{
@@ -40,7 +39,14 @@ const coursesSchema = new mongoose.Schema({
     studentEnrolled:[{
         type:mongoose.Schema.Types.ObjectId,
         ref:"user"
-    }]
+    }],
+    instructions:{
+        typ:[String]
+    },
+    status : {
+        type :String,
+        enum : ["Draft" , "Published"]
+    }
 
 });
 
