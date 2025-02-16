@@ -86,7 +86,7 @@ exports.isInstructor = async(req , res , next)=>{
 
         return res.status(500).json({
             success:false,
-            message:"there would be some error in fetching th accountType of user"
+            message:"there would be some error in fetching the accountType of user"
 
         })
 
@@ -119,3 +119,4 @@ exports.isAdmin = async(req , res , next)=>{
 
     }
 }
+

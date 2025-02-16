@@ -26,65 +26,65 @@ exports.uploadImageToCloudinary = async(file , folder , height , quality)=>
 
 
 // ye mene likha hai so confirm karna hai 
-const cloudinary = require('cloudinary').v2;
+// const cloudinary = require('cloudinary').v2;
 
-exports.updateVideoTOCloudinary = async(file , folder , publicId , height , quality)=>
-{
-    try{
+// exports.updateVideoTOCloudinary = async(file , folder , publicId , height , quality)=>
+// {
+//     try{
 
-        const options = {folder};
+//         const options = {folder};
 
-        if(quality){
-            options.quality = quality;
-        }
+//         if(quality){
+//             options.quality = quality;
+//         }
 
-        if(height){
-            options.height = height;
-        }
+//         if(height){
+//             options.height = height;
+//         }
 
-        if(publicId){
-            options.public_id = publicId,
-            options.overwrite = true
-        }
+//         if(publicId){
+//             options.public_id = publicId,
+//             options.overwrite = true
+//         }
 
-        options.resource_type = "auto";
+//         options.resource_type = "auto";
 
-        await cloudinary.uploader.upload(file.tempFilePath , options);
+//         await cloudinary.uploader.upload(file.tempFilePath , options);
 
-    }catch(error){
-       console.error = error;
-    }
-}
-
-
+//     }catch(error){
+//        console.error = error;
+//     }
+// }
 
 
-const cloudinary = require('cloudinary').v2;
 
-exports.deleteVideoTOCloudinary = async( publicId )=>
-{
-    try{
 
-        const options = {folder};
+// const cloudinary = require('cloudinary').v2;
 
-        // if(quality){
-        //     options.quality = quality;
-        // }
+// exports.deleteVideoTOCloudinary = async( publicId )=>
+// {
+//     try{
 
-        // if(height){
-        //     options.height = height;
-        // }
+//         const options = {folder};
 
-        if(publicId){
-            options.public_id = publicId,
-            options.overwrite = true
-        }
+//         // if(quality){
+//         //     options.quality = quality;
+//         // }
 
-        options.resource_type = "auto";
+//         // if(height){
+//         //     options.height = height;
+//         // }
 
-        await cloudinary.uploader.destroy(file.tempFilePath , options);
+//         if(publicId){
+//             options.public_id = publicId,
+//             options.overwrite = true
+//         }
 
-    }catch(error){
-       console.error = error;
-    }
-}
+//         options.resource_type = "auto";
+
+//         await cloudinary.uploader.destroy(file.tempFilePath , options);
+
+//     }catch(error){
+//        console.error = error;
+//     }
+// }

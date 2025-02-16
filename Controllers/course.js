@@ -1,24 +1,33 @@
 const user = require("../Models/user");
-const Tag = require("../Models/tags");
+const category = require("../Models/category");
 const courses = require("../Models/courses");
-const uploadImageToCloudinary = require("../Utilities/uploadImageToCloudinary")
+const {uploadImageToCloudinary} = require("../Utilities/uploadImageToCloudinary")
 
 exports.createCourse = async(req , res)=>{
     try{
 
-        const {courseName , courseDescription ,  whatYouWillLearn , price  , tag} = req.body ;
+
+        const {courseName , courseDescription ,  whatYouWillLearn , price  , tag , category ,status , instructions} = req.body ;
 
         const thumbnail = req.files.thumbnailImage;
 
-        if(!courseName || !courseDescription || !whatYouWillLearn || !price || !tag  || !thumbnail){
+        if(!courseName || !courseDescription || !whatYouWillLearn || !price || !tag  || !thumbnail || !category || !status || !instructions ){
             return res.status(400).json({
                 success: false,
                 message:"fill add details completely and carefully",
               });
         }
 
+        if (!status || status === undefined) {
+			status = "Draft";
+		}
+
         const userId = req.user.id
-        const checkInstructor = await user.findById({_id : userId})
+        const checkInstructor = await user.findById(userId , 
+            {
+                accountType : "Instructor"
+            }
+        )
         if(!checkInstructor){
             return res.status(400).json({
                 success: false,
@@ -26,8 +35,8 @@ exports.createCourse = async(req , res)=>{
               });
         }
 
-        const checkTag = await  Tag.findOne({tag:tag})
-        if(!checkTag){
+        const categoryDetails = await  category.findById({category})
+        if(!categoryDetails){
             return res.status(400).json({
                 success: false,
                 message:"tag can't find in tags schema",
@@ -43,7 +52,11 @@ exports.createCourse = async(req , res)=>{
             whatYouWillLearn : whatYouWillLearn,
             instructor : checkInstructor._id,
             thumbnail:uploadthumbnail.secure_url,
-            tag: checkTag._id
+            tag : tag,
+            category : categoryDetails._id,
+            status:status,
+            instructions : instructions
+
         });
 
         const updateUserCourseArray = await user.findByIdAndUpdate({_id : checkInstructor._id}, 
@@ -55,24 +68,45 @@ exports.createCourse = async(req , res)=>{
             {new:true}
         )
 
+        await category.findByIdAndUpdate({_id:category},
+            {
+                $push:{
+                    course : newCourse._id
+                }
+            },
+            {new : true}
+        )
+
         return res.status(200).json({
             success: true,
+            data : newCourse,
             message:"course created successfully",
           });
 
     }catch(error){
         return res.status(500).json({
             success: false,
-            message:"",
+            message:"Failed to create course",
+            error : error.message
           });
     }
-}
+};
 
 
 exports.showAllCourse = async(req , res)=>{
     try{
   
-        const allcourses = await courses.find({});
+        const allcourses = await courses.find({},
+            {
+                courseName : true ,
+                price : true ,
+                thumbnail : true ,
+                instructor : true,
+                ratingAndReviews : true ,
+                studentEnrolled : true
+            }
+        ).populate("instructor")
+        .exec();
 
         if(!allcourses){
             return res.status(400).json({
@@ -83,6 +117,7 @@ exports.showAllCourse = async(req , res)=>{
 
         return res.status(200).json({
             success: true,
+            data:allcourses,
             message:"all courses fetched successfully",
           });
 
@@ -90,6 +125,7 @@ exports.showAllCourse = async(req , res)=>{
         return res.status(500).json({
             success: false,
             message:"some error occurs in fetching the all courses",
+            error:error.message
           }); 
     }
 }
@@ -98,20 +134,20 @@ exports.showAllCourse = async(req , res)=>{
 exports.getAllDetailsOfOneCourse  = async(req , res)=>{
     try{
 
-        const courseId = req.id
+        const courseId = req.body;
 
-        const allDetails = await courses.findOne({_id:courseId})
+        const allDetails = await courses.find({_id:courseId})
                             .populate({
-                                path:"instructor"
-                                .populate({
+                                path:"instructor",
+                                populate : {
                                      path : "additionalDetails"
-                                })
+                                }
                             })
                             .populate({
-                                path:"courseContent"
-                                .populate({
+                                path:"courseContent",
+                                populate :{
                                     path:"subSections"
-                                })
+                                }
                             })
                             .populate("ratingAndReviews")
                             .populate("category");
@@ -123,7 +159,7 @@ exports.getAllDetailsOfOneCourse  = async(req , res)=>{
         })
        }                     
 
-       return res.status(400).json({
+       return res.status(200).json({
         success:true,
         message:'all datas of courseId is fethed succcessfully',
         data:allDetails
@@ -136,3 +172,4 @@ exports.getAllDetailsOfOneCourse  = async(req , res)=>{
         })
     }
 }
+

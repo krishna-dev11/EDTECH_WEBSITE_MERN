@@ -2,7 +2,8 @@ const mongoose  = require("mongoose");
 const courses = require("../Models/courses")
 const {instance} = require("../config/RazorpayInstance");
 const user = require("../Models/user");
-const {mailSender} = require("../Utilities/mailSender")
+const {mailSender} = require("../Utilities/mailSender");
+const {courseEnrollmentEmail} = require("../mail/templates/courseEnrollmentEmal")
 
 exports.capturePayment = async(req , res)=>{
     try{
@@ -11,7 +12,7 @@ exports.capturePayment = async(req , res)=>{
 
         const userId = req.user.id;
 
-        if(!courseId || !userId){
+        if(!courseId ){
             return res.status(400).json({
                 success:false,
                 message:"please fill all details carefully"
@@ -27,7 +28,7 @@ exports.capturePayment = async(req , res)=>{
         }
 
         const uid = new mongoose.Types.ObjectId(userId);
-        if(iscourseExist.studentEnrolled == uid){
+        if(iscourseExist.studentEnrolled.includes(uid)){
             return res.status(400).json({
                 success:false,
                 message:"User is already Enrolled in these course"
@@ -43,8 +44,8 @@ exports.capturePayment = async(req , res)=>{
             amount : amount * 100,
             currency,
             receipt : Math.random(Date.now()).toString(),
-            note:{
-                courseId,
+            notes:{
+                courseId : courseId,
                 userId
             }
         }
@@ -83,13 +84,13 @@ exports.verifySignature = async(req , res)=>{
 
         const Signature = req.header["x-razorpay-signature"];
 
-        const Shasum = crypto.createhmac("Sha256" , webhookSecret);
+        const Shasum = crypto.createHmac("Sha256" , webhookSecret);
         Shasum.update(JSON.stringify(req.body));
         const digest = Shasum.digest("hex");
 
-        if(digest == Signature){
+        if(digest === Signature){
 
-            const {courseId , userId} = req.body.payload.payment.entity.note;
+            const {courseId , userId} = req.body.payload.payment.entity.notes;
 
             const updatecourse = await courses.findByIdAndUpdate({_id:courseId},
                 {
@@ -101,7 +102,7 @@ exports.verifySignature = async(req , res)=>{
             )
 
             if(!updatecourse){
-                return res.status(400).json({
+                return res.status(500).json({
                     success:false,
                     message:"course is not found with these it given by razorpay request"
                 })
@@ -124,7 +125,7 @@ exports.verifySignature = async(req , res)=>{
             }
 
            const coursesuccessfulluBuyEmail =  await mailSender(updateUser.email , 
-                "payment successfull email" , 
+                "congratulations from Krishna Gothwal" , 
                 "payment successfull email" 
             )
         }
@@ -143,3 +144,4 @@ exports.verifySignature = async(req , res)=>{
         })
     }
 }
+

@@ -17,13 +17,9 @@ const userSchema = new mongoose.Schema({
         required:true,
         trim:true
     },
-    contactNO:{
-        type:Number
-    },
     password:{    
         type:String,
-        required:true,
-        trim:true
+        required:true
     },
     accountType:{
         type:String,
@@ -31,10 +27,15 @@ const userSchema = new mongoose.Schema({
         enum:["Admin" , "Instructor" , "Student"]
     },
     active:{
-        type:Boolean     
+        type:Boolean,
+        default:true    
+    },
+    contactNO:{
+        type:Number
     },
     approved:{
-        type:Boolean
+        type:Boolean,
+        default:true
     },
     courses:[{
         type:mongoose.Schema.Types.ObjectId,
@@ -42,6 +43,7 @@ const userSchema = new mongoose.Schema({
     }],
    additionalDetails :{
         type:mongoose.Schema.Types.ObjectId,
+        required:true,
         ref:"profile"
     },
     coursesProgress:[{
@@ -62,6 +64,8 @@ const userSchema = new mongoose.Schema({
     }
 
 
-});
+},
+{timestamps : true}
+);
 
 module.exports = mongoose.model("user" , userSchema);

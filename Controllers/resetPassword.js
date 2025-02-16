@@ -22,13 +22,13 @@ exports.forgotpasswordToken = async (req, res) => {
       });
     }
 
-    const token = crypto.randomUUID();
+    const token = crypto.randomBytes(20).toString("hex");
 
     const updatedUser = await user.findOneAndUpdate(
       { email: email },
       {
         token: token,
-        resetPasswordExpires: Date.now() + 5 * 60 * 1000,
+        resetPasswordExpires: Date.now() + 3600000,
       },
       { new: true }
     );
@@ -82,8 +82,8 @@ exports.forgotPassword = async (req, res) => {
       });
     }
 
-    if (existingUser.resetPasswordExpires < Date.now()) {
-      return res.status(401).json({
+    if (existingUser.resetPasswordExpires > Date.now()) {
+      return res.status(403).json({
         success: false,
         message: "token was expired send link again",
       });
@@ -109,3 +109,5 @@ exports.forgotPassword = async (req, res) => {
     });
   }
 };
+
+

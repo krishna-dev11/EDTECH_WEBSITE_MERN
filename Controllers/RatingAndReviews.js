@@ -16,19 +16,34 @@ exports.createRatingAndReviews = async (req, res) => {
       });
     }
 
-    // check user allready hit the review and rating or not
+    // check user allready Enrolled in  couse
     const isUserAlreadyHit = await courses.findOne({
       _id: courseId,
       studentEnrolled: userId,
       // or   studentEnrolled : {$elemMatch : {$eq : userId}}
     });
 
-    if (isUserAlreadyHit) {
-      return res.status(400).json({
+    if (!isUserAlreadyHit) {
+      return res.status(404).json({
         success: false,
-        message: " you are already hits the rating and reviews on these course",
+        message: " student is not Enrolled in Our Course",
       });
     }
+
+
+    const AlreadyReviewd = await ratingAndReviews.findOne(
+      {
+        user :userId,
+        course : courseId
+      });
+      if(AlreadyReviewd)
+      {
+        return res.status(403).json({
+          success:false,
+          message:"course alreday reviewd by the User"
+        })
+      }
+
 
     const createRatingandReviews = await ratingAndReviews.create({
       user: userId,
@@ -49,6 +64,7 @@ exports.createRatingAndReviews = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "rating and reviews are successfully created",
+      data : createRatingandReviews
     });
   } catch (error) {
     return res.status(500).json({
@@ -60,10 +76,12 @@ exports.createRatingAndReviews = async (req, res) => {
 
 exports.getAverageRating = async (req, res) => {
   try {
+
+    const courseId  = req.body.courseId;
     const result = await ratingAndReviews.aggregate([
       {
         $match: {
-          course: new mongoose.Types.ObjectId(courseId.toString()),
+          course: new mongoose.Types.ObjectId(courseId),
         },
       },
       {
@@ -102,7 +120,12 @@ exports.getAllRatingAndReviews = async (req, res) => {
                                                    .populate({
                                                             path:"user",
                                                             select:"firstName lastName email image"
-                                                    });
+                                                    })
+                                                    .populate({
+                                                      path:"course",
+                                                      select:"courseName"
+                                                    }).exec();
+                                                    
 
     return res.status(200).json({
       success: true,
@@ -117,3 +140,5 @@ exports.getAllRatingAndReviews = async (req, res) => {
     });
   }
 };
+
+createRatingAndReviews , getAverageRating , getAllRatingAndReviews

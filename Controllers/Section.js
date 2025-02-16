@@ -7,7 +7,7 @@ exports.createSection = async(req , res)=>{
 
         const{sectionName , courseId} = req.body;
 
-        if(!sectionName ){
+        if(!sectionName || !courseId){
             return res.status(400).json({
                 success:false,
                 message : "plaease enter section name carefully"
@@ -21,19 +21,21 @@ exports.createSection = async(req , res)=>{
                 $push : {
                    courseContent : newsection._id
                 }
-            }
-        ).populate("courseContent").exec();
+            },
+            {new:true}
+        ).populate({
+             path:"courseContent",
+             populate:{
+                path:"subSections"
+             }
+        }).exec();
 
-        if(updateCourse){
-            return res.status(400).json({
-                success:false,
-                message:"course with these course Id is not present"
-            }) 
-        }
+        
 
         return res.status(200).json({
             success:true,
-            message:"section created successfully"
+            message:"section created successfully",
+            data : updateCourse
         })
 
     }catch(error){
@@ -50,7 +52,7 @@ exports.updateSection = async(req , res)=>{
 
         const {sectionName , sectionId} = req.body;
 
-        if(!section){
+        if(!sectionName || !sectionId){
             return res.status(400).json({
                 success:false,
                 message:"please enter a section name carefully"
@@ -78,7 +80,7 @@ exports.updateSection = async(req , res)=>{
 
 
     }catch(error){
-        return res.status(200).json({
+        return res.status(500).json({
             success:false,
             message:"some error occurs on updating a section"
         })
@@ -89,19 +91,9 @@ exports.updateSection = async(req , res)=>{
 exports.deleteSection = async(req , res)=>{
     try{
 
-        const {sectionId , courseId} = req.body;
+        const {sectionId} = req.params;
 
         const deletedSection = await section.findByIdAndDelete({_id : sectionId});
-
-        // ye bhi mene hi likh hai so check it 
-        await courses.findByIdAndUpdate({_id : courseId},
-            {
-                $pull:{
-                    courseContent : sectionId
-                }
-            },
-            {new:true}
-        )
 
         if(!deletedSection){
             return res.status(400).json({
@@ -123,3 +115,4 @@ exports.deleteSection = async(req , res)=>{
         })
     }
 }
+

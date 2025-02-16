@@ -4,6 +4,11 @@ const bcrypt = require("bcrypt");
 const profile = require("../Models/profile");
 const jwt = require("jsonwebtoken");
 const cookie = require("cookie-parser");
+const otpGenerator = require("otp-generator");
+const mailSender = require("../Utilities/mailSender");
+const { passwordUpdated } = require("../mail/templates/passwordUpdate");
+require("dotenv").config();
+
 
 // send OTP
 exports.sendOTP = async (req, res) => {
@@ -27,7 +32,7 @@ exports.sendOTP = async (req, res) => {
       });
     }
 
-    const otp = otpGenerator.generate(6, {
+    var otp = otpGenerator.generate(6, {
       lowerCaseAlphabets: false,
       upperCaseAlphabets: false,
       specialChars: false,
@@ -50,6 +55,7 @@ exports.sendOTP = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "entery of otp successfully created in database",
+      otp
     });
   } catch (error) {
     return res.status(500).json({
@@ -71,7 +77,6 @@ exports.signUP = async (req, res) => {
       confirmPassword,
       contactNO,
       accountType,
-      additionalDetails,
       otp,
     } = req.body;
 
@@ -83,7 +88,6 @@ exports.signUP = async (req, res) => {
       !confirmPassword ||
       !contactNO ||
       !accountType ||
-      !additionalDetails ||
       !otp
     ) {
       return res.status(401).json({
@@ -112,12 +116,12 @@ exports.signUP = async (req, res) => {
     const recentOtp = await OTP.findOne({ email: email })
       .sort({ createdAt: -1 })
       .limit(1);
-    if (recentOtp.opt.length == 0) {
+    if (recentOtp.length == 0) {
       return res.status(401).json({
         success: false,
         message: "OTP is not Found",
       });
-    } else if (recentOtp.otp != otp) {
+    } else if (recentOtp[0].otp != otp) {
       return res.status(400).json({
         success: false,
         message: "OTP is Invalid",
@@ -125,6 +129,10 @@ exports.signUP = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create the user
+		let approved = "";
+		approved === "Instructor" ? (approved = false) : (approved = true);
 
     const profileDetails = await profile.create({
       gender: null,
@@ -139,6 +147,7 @@ exports.signUP = async (req, res) => {
       email,
       accountType,
       contactNO,
+      approved:approved,
       password: hashedPassword,
       imageUrl: `https://api.dicebear.com/5.x/initials/svg?seed=${firstName} ${lastName}`,
       additionalDetails: profileDetails._id,
@@ -146,9 +155,9 @@ exports.signUP = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      data: createUser,
+      createUser,
       message: "user signUp successfully",
-    });
+    })
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -163,13 +172,13 @@ exports.login = async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(401).json({
+      return res.status(400).json({
         success: false,
         message: "fill all required details in login form",
       });
     }
 
-    const User = await user.findOne({ email: email });
+    const User = await user.findOne({ email: email }).populate("additionalDetails")
 
     if (!User) {
       return res.status(401).json({
@@ -186,7 +195,7 @@ exports.login = async (req, res) => {
         accountType: User.accountType,
       };
       const options = {
-        expiresIn: "2h",
+        expiresIn: "24h",
       };
       const token = jwt.sign(payload, process.env.SECRET_KEY, options);
 
@@ -195,6 +204,7 @@ exports.login = async (req, res) => {
 
       const cookieOptions = {
         expires: Date.now(Date.now() + 3 * 24 * 60 * 60 * 1000),
+        httpOnly:true
       };
       res.cookie("token", token, cookieOptions).status(200).json({
         success: true,
@@ -217,14 +227,76 @@ exports.login = async (req, res) => {
 };
 
 
-// changed password
-exports.changePassword = async(req , res)=>{
-    try{
-       
-    }catch(error){
-        return res.status(500).json({
-            success:false,
-            message:'there would be some error in changing the password in database'
-        })
-    }
-}
+// Controller for Changing Password
+exports.changePassword = async (req, res) => {
+	try {
+		// Get user data from req.user
+		const userDetails = await User.findById(req.user.id);
+
+		// Get old password, new password, and confirm new password from req.body
+		const { oldPassword, newPassword, confirmNewPassword } = req.body;
+
+		// Validate old password
+		const isPasswordMatch = await bcrypt.compare(
+			oldPassword,
+			userDetails.password
+		);
+		if (!isPasswordMatch) {
+			// If old password does not match, return a 401 (Unauthorized) error
+			return res
+				.status(401)
+				.json({ success: false, message: "The password is incorrect" });
+		}
+
+		// Match new password and confirm new password
+		if (newPassword !== confirmNewPassword) {
+			// If new password and confirm new password do not match, return a 400 (Bad Request) error
+			return res.status(400).json({
+				success: false,
+				message: "The password and confirm password does not match",
+			});
+		}
+
+		// Update password
+		const encryptedPassword = await bcrypt.hash(newPassword, 10);
+		const updatedUserDetails = await User.findByIdAndUpdate(
+			req.user.id,
+			{ password: encryptedPassword },
+			{ new: true }
+		);
+
+		// Send notification email
+		try {
+			const emailResponse = await mailSender(
+				updatedUserDetails.email,
+				passwordUpdated(
+					updatedUserDetails.email,
+					`Password updated successfully for ${updatedUserDetails.firstName} ${updatedUserDetails.lastName}`
+				)
+			);
+			console.log("Email sent successfully:", emailResponse.response);
+		} catch (error) {
+			// If there's an error sending the email, log the error and return a 500 (Internal Server Error) error
+			console.error("Error occurred while sending email:", error);
+			return res.status(500).json({
+				success: false,
+				message: "Error occurred while sending email",
+				error: error.message,
+			});
+		}
+
+		// Return success response
+		return res
+			.status(200)
+			.json({ success: true, message: "Password updated successfully" });
+	} catch (error) {
+		// If there's an error updating the password, log the error and return a 500 (Internal Server Error) error
+		console.error("Error occurred while updating password:", error);
+		return res.status(500).json({
+			success: false,
+			message: "Error occurred while updating password",
+			error: error.message,
+		});
+	}
+};
+
