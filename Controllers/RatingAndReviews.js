@@ -1,10 +1,11 @@
 const { default: mongoose } = require("mongoose");
 const courses = require("../Models/courses");
 const ratingAndReviews = require("../Models/ratingAndReviews");
-const user = require("../Models/user");
+
 
 exports.createRatingAndReviews = async (req, res) => {
   try {
+    
     const userId = req.user.id;
     const { courseId, rating, reviews } = req.body;
 
@@ -141,4 +142,4 @@ exports.getAllRatingAndReviews = async (req, res) => {
   }
 };
 
-createRatingAndReviews , getAverageRating , getAllRatingAndReviews
+
