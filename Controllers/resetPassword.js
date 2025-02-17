@@ -1,7 +1,8 @@
 const user = require("../Models/user");
-const mailsender = require("../Utilities/mailSender");
+const {mailSender} = require("../Utilities/mailSender");
 const bcrypt = require("bcrypt");
 
+// checked
 exports.forgotpasswordToken = async (req, res) => {
   try {
     const email = req.body.email;
@@ -14,7 +15,7 @@ exports.forgotpasswordToken = async (req, res) => {
     }
 
     const userexisting = await user.findOne({ email: email });
-
+    // console.log(userexisting)
     if (!userexisting) {
       return res.status(401).json({
         success: false,
@@ -22,9 +23,13 @@ exports.forgotpasswordToken = async (req, res) => {
       });
     }
 
-    const token = crypto.randomBytes(20).toString("hex");
+    // console.log("hi" )
+    // const token = crypto.randomBytes(20).toString("hex");
+    const token = crypto.randomUUID(20).toString("hex");
+    // console.log(token)
 
-    const updatedUser = await user.findOneAndUpdate(
+
+      await user.findOneAndUpdate(
       { email: email },
       {
         token: token,
@@ -33,13 +38,19 @@ exports.forgotpasswordToken = async (req, res) => {
       { new: true }
     );
 
+    // console.log(hi)
+
     const url = `https://localhost:3000/update-password/${token}`;
 
-    await mailsender(
+    // console.log(url)
+
+    const hi = await mailSender(
       email,
       "secure link to change your password ",
       `click on these link and change password ${url}`
     );
+
+    console.log(hi)
 
     return res.status(200).json({
       success: true,
@@ -54,12 +65,14 @@ exports.forgotpasswordToken = async (req, res) => {
   }
 };
 
+// checked
 // actually  reset password after clicking on the link provided to the authorized email
 exports.forgotPassword = async (req, res) => {
   try {
-    const { password, confirmedPassword, token } = req.body;
+    console.log(req.body)
+    const { password, confirmedPassword , token } = req.body
 
-    if (!password || !confirmedPassword || !token) {
+    if (!password || !confirmedPassword ) {
       return res.status(401).json({
         success: false,
         message: "fill all details carefully ",
@@ -82,7 +95,7 @@ exports.forgotPassword = async (req, res) => {
       });
     }
 
-    if (existingUser.resetPasswordExpires > Date.now()) {
+    if (existingUser.resetPasswordExpires < Date.now()) {
       return res.status(403).json({
         success: false,
         message: "token was expired send link again",

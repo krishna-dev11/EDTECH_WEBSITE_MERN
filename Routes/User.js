@@ -12,7 +12,7 @@ router.post('/forgotpasswordToken' ,  forgotpasswordToken )
 router.post('/forgotPassword' ,  forgotPassword)
 
 // Auth Routes
-router.post('/sendOTP' , auth ,  sendOTP)
+router.post('/sendOTP' ,  sendOTP)
 router.post('/signUP' , signUP)
 router.post('/login' , login)
 router.post('/changePassword' , auth ,  changePassword)

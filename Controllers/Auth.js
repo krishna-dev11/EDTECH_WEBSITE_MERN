@@ -10,10 +10,11 @@ const { passwordUpdated } = require("../mail/templates/passwordUpdate");
 require("dotenv").config();
 
 
-// send OTP
+// send OTP check
 exports.sendOTP = async (req, res) => {
   try {
-    const { email } = req.body;
+    console.log("hi")
+    const {email} = req.body;
 
     if (!email) {
       return res.status(401).json({
@@ -32,11 +33,14 @@ exports.sendOTP = async (req, res) => {
       });
     }
 
+    
+
     var otp = otpGenerator.generate(6, {
       lowerCaseAlphabets: false,
       upperCaseAlphabets: false,
       specialChars: false,
     });
+  
 
     const sameOtpPresent = await OTP.findOne({ otp: otp });
 
@@ -66,7 +70,7 @@ exports.sendOTP = async (req, res) => {
   }
 };
 
-// signUP
+// signUP  check
 exports.signUP = async (req, res) => {
   try {
     const {
@@ -75,7 +79,6 @@ exports.signUP = async (req, res) => {
       email,
       password,
       confirmPassword,
-      contactNO,
       accountType,
       otp,
     } = req.body;
@@ -86,7 +89,6 @@ exports.signUP = async (req, res) => {
       !email ||
       !password ||
       !confirmPassword ||
-      !contactNO ||
       !accountType ||
       !otp
     ) {
@@ -102,7 +104,7 @@ exports.signUP = async (req, res) => {
         message: "password and confirmedPassword can't matched",
       });
     }
-
+   
     const checkUser = await user.findOne({ email: email });
 
     if (checkUser) {
@@ -112,27 +114,35 @@ exports.signUP = async (req, res) => {
           "you are already register with these email on our plateform go through the login page or start signUp with another email address",
       });
     }
-
-    const recentOtp = await OTP.findOne({ email: email })
+   
+    
+// find recent otp from otp schema
+    const recentOtp = await OTP.find({ email: email })
       .sort({ createdAt: -1 })
       .limit(1);
-    if (recentOtp.length == 0) {
-      return res.status(401).json({
+
+      console.log(recentOtp)
+    
+    if (recentOtp.length === 0) {
+      return res.status(400).json({
         success: false,
         message: "OTP is not Found",
       });
-    } else if (recentOtp[0].otp != otp) {
+    } else if ( otp !== recentOtp[0].otp ) {
       return res.status(400).json({
         success: false,
         message: "OTP is Invalid",
       });
     }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
+   
+   
+    const hashedPassword = await bcrypt.hash(password , 10);
+    // console.log(hashedPassword)
 
     // Create the user
 		let approved = "";
 		approved === "Instructor" ? (approved = false) : (approved = true);
+    
 
     const profileDetails = await profile.create({
       gender: null,
@@ -140,18 +150,19 @@ exports.signUP = async (req, res) => {
       about: null,
       contactNumber: null,
     });
-
+    
     const createUser = await user.create({
       firstName,
       lastName,
       email,
       accountType,
-      contactNO,
       approved:approved,
-      password: hashedPassword,
-      imageUrl: `https://api.dicebear.com/5.x/initials/svg?seed=${firstName} ${lastName}`,
+      password:hashedPassword,
+      imageUrl:`https://api.dicebear.com/5.x/initials/svg?seed=${firstName} ${lastName}`,
       additionalDetails: profileDetails._id,
     });
+    console.log("hi")
+    
 
     return res.status(200).json({
       success: true,
@@ -166,7 +177,7 @@ exports.signUP = async (req, res) => {
   }
 };
 
-// login
+// login  check
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -178,8 +189,10 @@ exports.login = async (req, res) => {
       });
     }
 
-    const User = await user.findOne({ email: email }).populate("additionalDetails")
+  
 
+    const User = await user.findOne({ email: email }).populate("additionalDetails")
+    // console.log(User)
     if (!User) {
       return res.status(401).json({
         success: false,
@@ -188,30 +201,42 @@ exports.login = async (req, res) => {
       });
     }
 
-    if (await bcrypt.compare(User.password, password)) {
+    
+    if (await bcrypt.compare(password, User.password )) {
+      
       const payload = {
         email: User.email,
-        id: User_id,
+        id: User._id,
         accountType: User.accountType,
       };
-      const options = {
+      // console.log(payload)
+
+      
+      const token = jwt.sign(payload, process.env.SECRET_KEY, {
         expiresIn: "24h",
-      };
-      const token = jwt.sign(payload, process.env.SECRET_KEY, options);
+      });
+      // console.log("token" ,token)
+
 
       User.token = token;
       User.password = undefined;
+      // console.log(User)
 
-      const cookieOptions = {
-        expires: Date.now(Date.now() + 3 * 24 * 60 * 60 * 1000),
+      const options = {
+        expiresIn : Date.now(Date.now() + 3 * 24 * 60 * 60 * 1000),
         httpOnly:true
       };
-      res.cookie("token", token, cookieOptions).status(200).json({
+     
+     return  res.cookie("token", token , options).status(200).json({
         success: true,
         token,
         User,
         message: "User Logged in Successfully",
       });
+
+    
+      
+     
     } else {
       res.status(401).json({
         success: false,
@@ -221,7 +246,7 @@ exports.login = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: `user login request hai due to some error : ${error}`,
+      message: `user login request fail  due to some error : ${error}`,
     });
   }
 };
@@ -231,7 +256,8 @@ exports.login = async (req, res) => {
 exports.changePassword = async (req, res) => {
 	try {
 		// Get user data from req.user
-		const userDetails = await User.findById(req.user.id);
+    console.log(req.body)
+		const userDetails = await user.findById(req.user.id);
 
 		// Get old password, new password, and confirm new password from req.body
 		const { oldPassword, newPassword, confirmNewPassword } = req.body;

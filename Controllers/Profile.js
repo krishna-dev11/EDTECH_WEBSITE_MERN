@@ -4,12 +4,14 @@ const { uploadImageToCloudinary } = require("../Utilities/uploadImageToCloudinar
 const profile = require("../Models/profile");
 require("dotenv").config();
 
-exports.updateProfile = async(req , res)=>{
+// check
+exports.updateProfile = async( req , res )=>{
     try{
-      
-        const {gender, dateOfBirth="" , about="" , contactNumber} =req.body;
+        console.log(req.body)
+        const {gender, dateOfBirth="" , about="" , contactNumber} = req.body;
 
         const userId = req.user.id
+        
 
         if(!gender || !dateOfBirth || !about || !contactNumber ){
             return res.status(400).json({
@@ -34,6 +36,7 @@ exports.updateProfile = async(req , res)=>{
         })   
 
     }catch(error){
+        console.log(error)
         return res.status(500).json({
             success:false,
             message:"some errors occurs in updating the additional details",
@@ -42,12 +45,14 @@ exports.updateProfile = async(req , res)=>{
     }
 }
 
+// check
 exports.getAllUserDetails = async(req , res)=>{
     try{
       
         const userId = req.user.id;
 
         const getalldetails = await user.findById({_id : userId}).populate("additionalDetails").exec();
+        console.log(getalldetails)
  
         if(!getalldetails){
             return res.status(400).json({
@@ -71,6 +76,7 @@ exports.getAllUserDetails = async(req , res)=>{
     }
 }
 
+// check
 exports.updateDisplayPicture = async(req , res)=>{
     try{
 
@@ -104,10 +110,14 @@ exports.updateDisplayPicture = async(req , res)=>{
     }
 }
 
+// check but body me id pass karke
 exports.deleteAccount = async(req , res)=>{
     try{
       
+        console.log(req.user)
         const userId = req.user.id;
+        // const userId = req.body.id
+
 
         const checkUser = await user.findById({_id:userId})
         if(!checkUser){

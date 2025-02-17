@@ -30,9 +30,6 @@ const userSchema = new mongoose.Schema({
         type:Boolean,
         default:true    
     },
-    contactNO:{
-        type:Number
-    },
     approved:{
         type:Boolean,
         default:true
